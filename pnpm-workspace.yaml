@@ -36,6 +36,25 @@ packages:
   - "examples/teams"
   - "!examples/v1/_legacy"
   - "showcase/scripts"
+  # NOTE: do NOT add a `package-lock.json` to `showcase/harness`. As a
+  # workspace member its only install path is pnpm from the root
+  # `pnpm-lock.yaml` — that is what both consumers actually run
+  # (`showcase/harness/Dockerfile` and the `harness unit suite` job in
+  # `test_unit-showcase.yml`, each via `pnpm install --frozen-lockfile`).
+  # An npm lockfile here is not merely redundant, it is misleading:
+  #   * npm ignores the root `pnpm.overrides` block — 73 minimum-version
+  #     floors, several of them security patches. That field is pnpm-only,
+  #     so `npm ci` can silently resolve BELOW an intended floor.
+  #   * npm resolves differently regardless. Measured on the lockfile this
+  #     note replaces: 9 direct deps diverged from the pnpm tree, with
+  #     `@hono/node-server` off by a whole major (pnpm 2.0.0, npm 1.19.17).
+  # One was committed in 671cc6ae1d ("so npm ci resolves deterministically"),
+  # but nothing here ever ran `npm ci`, so it rotted unobserved: by the time
+  # it was removed it was 106 versions stale AND missing `axe-core`, which
+  # broke `npm ci` for anyone who trusted its presence and tried.
+  # `showcase/scripts` above legitimately DOES ship one — its lockfile is
+  # read by `npm ci` in the harness Dockerfile and in six showcase workflows.
+  # That is the exception here, not the pattern.
   - "showcase/harness"
   - "showcase/eval-webhook"
   - "showcase/angular"
